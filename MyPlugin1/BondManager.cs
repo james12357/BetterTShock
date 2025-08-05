@@ -1,4 +1,5 @@
 ﻿using TShockAPI;
+using Utils = Terraria.Utils;
 
 namespace MyPlugin1
 {
@@ -13,15 +14,8 @@ namespace MyPlugin1
         {
             // 将传入的 plugin 实例保存到自己的字段中
             _plugin = plugin;
-            TShockAPI.GetDataHandlers.PlayerSpawn += HandlePlayerSpawn;
-            TShockAPI.GetDataHandlers.PlayerDamage += HandlePlayerDamaged;
         }
-
-        public void Dispose()
-        {
-            TShockAPI.GetDataHandlers.PlayerSpawn -= HandlePlayerSpawn;
-            TShockAPI.GetDataHandlers.PlayerDamage -= HandlePlayerDamaged;
-        }
+        
 
         public void HandleChangeBond(CommandArgs args)
         {
@@ -104,6 +98,7 @@ namespace MyPlugin1
             TSPlayer plr = args.Player as TSPlayer;
             if (plr.GetData<bool>("OnDamageShare"))
             {
+                args.Handled = true;
                 plr.SetData("OnDamageShare", false);
                 return;
             }
@@ -132,7 +127,7 @@ namespace MyPlugin1
                 // 在 if (targetPlayer != null) 内部
                 if (targetPlayer.Dead) return;
                 int originalDamage = args.Damage;
-                int sharedDamage = (int)Math.Round(originalDamage * 0.1);
+                int sharedDamage = (int)Math.Round(originalDamage * 0.2);
                 int finalDamage = originalDamage - sharedDamage;
                 if (sharedDamage > 0)
                 {
@@ -143,6 +138,43 @@ namespace MyPlugin1
                 args.Damage = (short)finalDamage;
             }
             
+        }
+
+        public void HandleGiftCommand(CommandArgs args)
+        {
+            TSPlayer plr = args.Player as TSPlayer;
+            if (!plr.GetData<bool>("Bonded"))
+            {
+                plr.SendErrorMessage("你没有绑定到玩家！");
+                return;
+            }
+            int destIndex = plr.GetData<int>("BondedWithUserID");
+            TSPlayer? targetPlayer =
+                TShock.Players.FirstOrDefault(p => p != null && p.Active && p.Account.ID == destIndex);
+            if (targetPlayer == null)
+            {
+                plr.SendErrorMessage("绑定的玩家当前不在线。");
+                return;
+            }
+
+            Item itemOnHand = plr.TPlayer.inventory[plr.TPlayer.selectedItem];
+            if (itemOnHand == null || itemOnHand.type == 0 || itemOnHand.stack == 0)
+            {
+                plr.SendErrorMessage("此物品不合法，或是你未持有物品。");
+                return;
+            }
+
+            if (!targetPlayer.InventorySlotAvailable)
+            {
+                plr.SendErrorMessage("对方背包已满！");
+                targetPlayer.SendErrorMessage(plr.Name + "尝试向你发送" + TShock.Utils.ItemTag(itemOnHand) + "，但是你的背包满了。");
+                return;
+            }
+            // 前置判断完成
+            targetPlayer.GiveItem(itemOnHand.type, itemOnHand.stack, itemOnHand.prefix);
+            plr.TPlayer.inventory[plr.TPlayer.selectedItem] = new Item();
+            targetPlayer.SendSuccessMessage(plr.Name + "向你发送了 " + (itemOnHand.stack == 1 ? (itemOnHand.stack + " 个") : "") + TShock.Utils.ItemTag(itemOnHand) + "。");
+            NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, plr.Index, plr.TPlayer.selectedItem); 
         }
     }
 }
