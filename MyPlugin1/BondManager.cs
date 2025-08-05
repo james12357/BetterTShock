@@ -171,10 +171,14 @@ namespace MyPlugin1
                 return;
             }
             // 前置判断完成
-            targetPlayer.GiveItem(itemOnHand.type, itemOnHand.stack, itemOnHand.prefix);
-            plr.TPlayer.inventory[plr.TPlayer.selectedItem] = new Item();
-            targetPlayer.SendSuccessMessage(plr.Name + "向你发送了 " + (itemOnHand.stack == 1 ? (itemOnHand.stack + " 个") : "") + TShock.Utils.ItemTag(itemOnHand) + "。");
-            NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, plr.Index, plr.TPlayer.selectedItem); 
+            // targetPlayer.GiveItem(itemOnHand.type, itemOnHand.stack, itemOnHand.prefix);
+            // targetPlayer.SendSuccessMessage(plr.Name + "向你发送了 " + (itemOnHand.stack == 1 ? "" : (itemOnHand.stack + " 个")) + TShock.Utils.ItemTag(itemOnHand) + "。");
+            // plr.TPlayer.inventory[plr.TPlayer.selectedItem].SetDefaults(0);
+            // NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, plr.Index, plr.TPlayer.selectedItem, 0); 
+            // 上述方法只在开启SSC的时候有效。换一种方法：激活命令之后玩家第一次丢出物品就发送此物品。
+            plr.SetData("PendingItemDrop", true);
+            plr.SendSuccessMessage("成功激活给 " + targetPlayer.Name + " 的发送通道！将物品丢出即可发送。");
+            targetPlayer.SendSuccessMessage(plr.Name + " 想给你送个礼物。");
         }
     }
 }

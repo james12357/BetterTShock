@@ -18,6 +18,7 @@ public class Plugin : TerrariaPlugin
     private BondManager _bondManager;
     private NewPlayerManager _newPlayerManager;
     private EventDispatcher _eventDispatcher;
+    private PlayerDropManager _playerDropManager;
     
 
 
@@ -25,7 +26,8 @@ public class Plugin : TerrariaPlugin
     {
         _newPlayerManager = new NewPlayerManager(this);
         _bondManager = new BondManager(this);
-        _eventDispatcher = new EventDispatcher(this, _bondManager, _newPlayerManager);
+        _playerDropManager = new PlayerDropManager(this);
+        _eventDispatcher = new EventDispatcher(this, _bondManager, _newPlayerManager, _playerDropManager);
         Commands.ChatCommands.Add(new Command("tshock.account.logout", ChangeImmediateRespawn, "toggleresp", "tsp"));
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleChangeBond, "bond", "b"));
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleGiftCommand, "gift", "g"));

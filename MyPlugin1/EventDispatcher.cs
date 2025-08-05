@@ -10,19 +10,23 @@ namespace MyPlugin1
         private readonly Plugin _plugin;
         private readonly BondManager _bondManager;
         private readonly NewPlayerManager _newPlayerManager;
+        private readonly PlayerDropManager _playerDropManager;
         // private readonly RespawnManager _respawnManager; // 未来可以添加
 
         // 构造函数，接收所有需要它调度的“部门经理”
-        public EventDispatcher(Plugin plugin, BondManager bondManager, NewPlayerManager newPlayerManager/*, RespawnManager respawnManager*/)
+        public EventDispatcher(Plugin plugin, BondManager bondManager, NewPlayerManager newPlayerManager,
+            PlayerDropManager playerDropManager/*, RespawnManager respawnManager*/)
         {
             _plugin = plugin;
             _bondManager = bondManager;
             // _respawnManager = respawnManager;
             _newPlayerManager = newPlayerManager;
+            _playerDropManager = playerDropManager;
             
             // 在这里，集中注册所有我们关心的钩子
             GetDataHandlers.PlayerDamage += OnPlayerDamage;
             GetDataHandlers.PlayerSpawn += OnPlayerSpawn;
+            GetDataHandlers.ItemDrop += OnItemDrop;
             ServerApi.Hooks.ServerJoin.Register(_plugin, OnJoin);
 
         }
@@ -32,6 +36,7 @@ namespace MyPlugin1
         {
             GetDataHandlers.PlayerDamage -= OnPlayerDamage;
             GetDataHandlers.PlayerSpawn -= OnPlayerSpawn;
+            GetDataHandlers.ItemDrop -= OnItemDrop;
             ServerApi.Hooks.ServerJoin.Deregister(_plugin, OnJoin);
 
         }
@@ -67,6 +72,11 @@ namespace MyPlugin1
         private void OnJoin(JoinEventArgs args)
         {
             _newPlayerManager.OnJoin(args);
+        }
+
+        private void OnItemDrop(object? sender, GetDataHandlers.ItemDropEventArgs args)
+        {
+            _playerDropManager.OnDrop(args);
         }
     }
 }
