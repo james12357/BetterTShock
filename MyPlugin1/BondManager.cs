@@ -93,7 +93,7 @@ namespace MyPlugin1
             }
         }
 
-        public void HandlePlayerDamaged(object? sender, GetDataHandlers.PlayerDamageEventArgs? args)
+        public void HandlePlayerDamaged(object? sender, GetDataHandlers.PlayerDamageEventArgs args)
         {
             TSPlayer plr = args.Player as TSPlayer;
             if (plr.GetData<bool>("OnDamageShare"))
@@ -157,17 +157,17 @@ namespace MyPlugin1
                 return;
             }
 
-            Item itemOnHand = plr.TPlayer.inventory[plr.TPlayer.selectedItem];
-            if (itemOnHand == null || itemOnHand.type == 0 || itemOnHand.stack == 0)
-            {
-                plr.SendErrorMessage("此物品不合法，或是你未持有物品。");
-                return;
-            }
+            // Item itemOnHand = plr.TPlayer.inventory[plr.TPlayer.selectedItem];
+            // if (itemOnHand == null || itemOnHand.type == 0 || itemOnHand.stack == 0)
+            // {
+            //     plr.SendErrorMessage("此物品不合法，或是你未持有物品。");
+            //     return;
+            // }
 
             if (!targetPlayer.InventorySlotAvailable)
             {
                 plr.SendErrorMessage("对方背包已满！");
-                targetPlayer.SendErrorMessage(plr.Name + "尝试向你发送" + TShock.Utils.ItemTag(itemOnHand) + "，但是你的背包满了。");
+                // targetPlayer.SendErrorMessage(plr.Name + "尝试向你发送" + TShock.Utils.ItemTag(itemOnHand) + "，但是你的背包满了。");
                 return;
             }
             // 前置判断完成
@@ -179,6 +179,37 @@ namespace MyPlugin1
             plr.SetData("PendingItemDrop", true);
             plr.SendSuccessMessage("成功激活给 " + targetPlayer.Name + " 的发送通道！将物品丢出即可发送。");
             targetPlayer.SendSuccessMessage(plr.Name + " 想给你送个礼物。");
+        }
+
+        public void SendDeathMessage(GetDataHandlers.PlayerDamageEventArgs args)
+        {
+            TSPlayer plr = args.Player as TSPlayer;
+            int destIndex = plr.GetData<int>("BondedWithUserID");
+            TSPlayer? targetPlayer =
+                TShock.Players.FirstOrDefault(p => p != null && p.Active && p.Account.ID == destIndex);
+            if (targetPlayer == null) return;
+            targetPlayer.SendErrorMessage("你把 " + plr.Name + " 害死了！");
+        }
+
+        public void GiveBondBuff(GetDataHandlers.PlayerDamageEventArgs args) // args.Player是受伤害的人（玩家B）
+        {
+            if (args.Player == null) return;
+            // A绑定B，B死之后给A添加buff
+            TSPlayer plr = args.Player as TSPlayer;
+            TSPlayer? targetPlayer =
+                TShock.Players.FirstOrDefault(p => p != null && p.Active && p.GetData<bool>("Bonded") 
+                                                   && p.GetData<int>("BondedWithUserID") == plr.Account.ID);
+            // 这里是玩家A
+            if (targetPlayer == null) return;
+            targetPlayer.SetData("DamageIncreasedByBond", true);
+            // 找到了幸存者！为他施加Buff。
+            int buffDurationSeconds = 10; // Buff持续10秒
+            
+            // 计算结束时间戳。DateTime.UtcNow 是全球标准时间，可以避免时区问题。
+            // .Ticks 是一个非常精确的时间单位（1 Tick = 100纳秒）。
+            long buffEndTimeTicks = DateTime.UtcNow.Ticks + TimeSpan.FromSeconds(buffDurationSeconds).Ticks;
+            targetPlayer.SetData("DamageIncreasedUntil", buffEndTimeTicks);
+            
         }
     }
 }

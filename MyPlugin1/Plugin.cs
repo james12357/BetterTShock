@@ -19,7 +19,7 @@ public class Plugin : TerrariaPlugin
     private NewPlayerManager _newPlayerManager;
     private EventDispatcher _eventDispatcher;
     private PlayerDropManager _playerDropManager;
-    
+    private NpcDamageManager _npcDamageManager;
 
 
     public override void Initialize()
@@ -27,7 +27,8 @@ public class Plugin : TerrariaPlugin
         _newPlayerManager = new NewPlayerManager(this);
         _bondManager = new BondManager(this);
         _playerDropManager = new PlayerDropManager(this);
-        _eventDispatcher = new EventDispatcher(this, _bondManager, _newPlayerManager, _playerDropManager);
+        _npcDamageManager = new NpcDamageManager(this);
+        _eventDispatcher = new EventDispatcher(this, _bondManager, _newPlayerManager, _playerDropManager, _npcDamageManager);
         Commands.ChatCommands.Add(new Command("tshock.account.logout", ChangeImmediateRespawn, "toggleresp", "tsp"));
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleChangeBond, "bond", "b"));
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleGiftCommand, "gift", "g"));

@@ -11,22 +11,25 @@ namespace MyPlugin1
         private readonly BondManager _bondManager;
         private readonly NewPlayerManager _newPlayerManager;
         private readonly PlayerDropManager _playerDropManager;
+        private readonly NpcDamageManager _npcDamageManager;
         // private readonly RespawnManager _respawnManager; // 未来可以添加
 
         // 构造函数，接收所有需要它调度的“部门经理”
         public EventDispatcher(Plugin plugin, BondManager bondManager, NewPlayerManager newPlayerManager,
-            PlayerDropManager playerDropManager/*, RespawnManager respawnManager*/)
+            PlayerDropManager playerDropManager, NpcDamageManager npcDamageManager/*, RespawnManager respawnManager*/)
         {
             _plugin = plugin;
             _bondManager = bondManager;
             // _respawnManager = respawnManager;
             _newPlayerManager = newPlayerManager;
             _playerDropManager = playerDropManager;
+            _npcDamageManager = npcDamageManager;
             
             // 在这里，集中注册所有我们关心的钩子
             GetDataHandlers.PlayerDamage += OnPlayerDamage;
             GetDataHandlers.PlayerSpawn += OnPlayerSpawn;
             GetDataHandlers.ItemDrop += OnItemDrop;
+            GetDataHandlers.NPCStrike += OnNPCStruck;
             ServerApi.Hooks.ServerJoin.Register(_plugin, OnJoin);
 
         }
@@ -37,6 +40,7 @@ namespace MyPlugin1
             GetDataHandlers.PlayerDamage -= OnPlayerDamage;
             GetDataHandlers.PlayerSpawn -= OnPlayerSpawn;
             GetDataHandlers.ItemDrop -= OnItemDrop;
+            GetDataHandlers.NPCStrike -= OnNPCStruck;
             ServerApi.Hooks.ServerJoin.Deregister(_plugin, OnJoin);
 
         }
@@ -52,10 +56,19 @@ namespace MyPlugin1
 
             // 如果没被处理，再调用绑定管理器的逻辑
             TSPlayer plr = args.Player as TSPlayer;
-            if (plr.GetData<bool>("WantImmediateRespawn") && args.Damage >= plr.TPlayer.statLife)
-            { 
-                plr.Spawn(PlayerSpawnContext.ReviveFromDeath);
-                plr.SendSuccessMessage("已重生！");
+            if (args.Damage >= plr.TPlayer.statLife)
+            {
+                _bondManager.GiveBondBuff(args);
+                if (plr.GetData<bool>("Bonded"))
+                {
+                    _bondManager.SendDeathMessage(args);
+                }
+                if (plr.GetData<bool>("WantImmediateRespawn"))
+                {
+                    plr.Spawn(PlayerSpawnContext.ReviveFromDeath);
+                                    plr.SendSuccessMessage("已重生！");
+                }
+                
             }
             else
             { 
@@ -77,6 +90,11 @@ namespace MyPlugin1
         private void OnItemDrop(object? sender, GetDataHandlers.ItemDropEventArgs args)
         {
             _playerDropManager.OnDrop(args);
+        }
+
+        private void OnNPCStruck(object? sender, GetDataHandlers.NPCStrikeEventArgs args)
+        {
+            _npcDamageManager.OnNPCStruck(sender, args);
         }
     }
 }
