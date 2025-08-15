@@ -3,7 +3,7 @@ using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 
-namespace MyPlugin1
+namespace BetterTShock
 {
     public class EventDispatcher
     {
@@ -59,10 +59,11 @@ namespace MyPlugin1
             if (args.Damage >= plr.TPlayer.statLife)
             {
                 _bondManager.GiveBondBuff(args);
-                if (plr.GetData<bool>("Bonded"))
-                {
-                    _bondManager.SendDeathMessage(args);
-                }
+                // if (plr.GetData<bool>("Bonded"))
+                // {
+                //     _bondManager.SendDeathMessage(args);
+                // }
+                // 应该查找谁绑定了他。这里的逻辑不对。
                 if (plr.GetData<bool>("WantImmediateRespawn"))
                 {
                     plr.Spawn(PlayerSpawnContext.ReviveFromDeath);

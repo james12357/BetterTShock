@@ -2,7 +2,8 @@ global using Terraria;
 global using TShockAPI;
 global using TerrariaApi.Server;
 global using System.Reflection;
-namespace MyPlugin1;
+global using System.IO;
+namespace BetterTShock;
 
 [ApiVersion(2, 1)]
 public class Plugin : TerrariaPlugin
@@ -15,6 +16,7 @@ public class Plugin : TerrariaPlugin
     public override string Author => "Junxi Cai";
     public override string Description => "None";
     public override Version Version => new Version(1, 0);
+    public static Config Config { get; private set; }
     private BondManager _bondManager;
     private NewPlayerManager _newPlayerManager;
     private EventDispatcher _eventDispatcher;
@@ -24,6 +26,13 @@ public class Plugin : TerrariaPlugin
 
     public override void Initialize()
     {
+        //Initialize config
+        string ConfigPath = Path.Combine(TShock.SavePath, "BetterTShock.json");
+        Config = Config.Read(ConfigPath, out bool fileCreated);
+        if (fileCreated)
+        {
+            TShock.Log.ConsoleInfo("没有找到配置文件，已自动创建 BetterTShock.json。");
+        }
         _newPlayerManager = new NewPlayerManager(this);
         _bondManager = new BondManager(this);
         _playerDropManager = new PlayerDropManager(this);

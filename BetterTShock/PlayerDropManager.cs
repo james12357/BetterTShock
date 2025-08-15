@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Terraria.GameContent.ItemDropRules;
 
-namespace MyPlugin1;
+namespace BetterTShock;
 
 public class PlayerDropManager
 {

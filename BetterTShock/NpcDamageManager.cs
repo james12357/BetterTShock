@@ -1,4 +1,4 @@
-﻿namespace MyPlugin1;
+﻿namespace BetterTShock;
 
 public class NpcDamageManager
 {

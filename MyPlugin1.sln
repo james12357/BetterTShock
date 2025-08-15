@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyPlugin1", "MyPlugin1\MyPlugin1.csproj", "{B2B8BF79-DEC9-423C-B603-E2080077DC8C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterTShock", "BetterTShock\BetterTShock.csproj", "{B2B8BF79-DEC9-423C-B603-E2080077DC8C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

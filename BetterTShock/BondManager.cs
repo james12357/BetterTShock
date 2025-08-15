@@ -1,7 +1,8 @@
-﻿using TShockAPI;
+﻿using BetterTShock;
+using TShockAPI;
 using Utils = Terraria.Utils;
 
-namespace MyPlugin1
+namespace BetterTShock
 {
     public class BondManager
     {
@@ -127,13 +128,12 @@ namespace MyPlugin1
                 // 在 if (targetPlayer != null) 内部
                 if (targetPlayer.Dead) return;
                 int originalDamage = args.Damage;
-                int sharedDamage = (int)Math.Round(originalDamage * 0.2);
+                int sharedDamage = (int)Math.Round(originalDamage * Plugin.Config.BondDamageSharingRatio);
                 int finalDamage = originalDamage - sharedDamage;
                 if (sharedDamage > 0)
                 {
                     targetPlayer.SetData("OnDamageShare", true);
                     targetPlayer.DamagePlayer(sharedDamage);
-                    targetPlayer.SetData("OnDamageShare", false); // 造成伤害后立刻重置标记
                 }
                 args.Damage = (short)finalDamage;
             }
@@ -147,6 +147,12 @@ namespace MyPlugin1
             {
                 plr.SendErrorMessage("你没有绑定到玩家！");
                 return;
+            }
+
+            if (plr.GetData<bool>("PendingItemDrop"))
+            {
+                plr.SetData("PendingItemDrop", false);
+                plr.SendSuccessMessage("发送通道已关闭。");
             }
             int destIndex = plr.GetData<int>("BondedWithUserID");
             TSPlayer? targetPlayer =
@@ -183,7 +189,7 @@ namespace MyPlugin1
 
         public void SendDeathMessage(GetDataHandlers.PlayerDamageEventArgs args)
         {
-            TSPlayer plr = args.Player as TSPlayer;
+            TSPlayer plr = args.Player as TSPlayer; // 这里是已死的
             int destIndex = plr.GetData<int>("BondedWithUserID");
             TSPlayer? targetPlayer =
                 TShock.Players.FirstOrDefault(p => p != null && p.Active && p.Account.ID == destIndex);
@@ -201,6 +207,7 @@ namespace MyPlugin1
                                                    && p.GetData<int>("BondedWithUserID") == plr.Account.ID);
             // 这里是玩家A
             if (targetPlayer == null) return;
+            targetPlayer.SendErrorMessage(plr.Name + " 倒下了！你获得临时的伤害提升。");
             targetPlayer.SetData("DamageIncreasedByBond", true);
             // 找到了幸存者！为他施加Buff。
             int buffDurationSeconds = 10; // Buff持续10秒
