@@ -26,3 +26,8 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: BetterTShock-Unstable-dll
+        path: BetterTShock/bin/Debug/net6.0/BetterTShock.dll
