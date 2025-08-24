@@ -1,9 +1,4 @@
-﻿using On.Terraria.GameContent;
-using TShockAPI;
-using Terraria;
-using TerrariaApi.Server;
-
-namespace BetterTShock;
+﻿namespace BetterTShock.Managers;
 
 public class NewPlayerManager
 {

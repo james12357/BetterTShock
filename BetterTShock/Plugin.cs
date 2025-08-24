@@ -3,6 +3,9 @@ global using TShockAPI;
 global using TerrariaApi.Server;
 global using System.Reflection;
 global using System.IO;
+using BetterTShock.Features;
+using BetterTShock.Managers;
+
 namespace BetterTShock;
 
 [ApiVersion(2, 1)]
@@ -16,19 +19,27 @@ public class Plugin : TerrariaPlugin
     public override string Author => "Junxi Cai";
     public override string Description => "None";
     public override Version Version => new Version(1, 0);
+    public const int CurrentDbVersion = 1;
     public static Config Config { get; private set; }
     private BondManager _bondManager;
     private NewPlayerManager _newPlayerManager;
     private EventDispatcher _eventDispatcher;
     private PlayerDropManager _playerDropManager;
     private NpcDamageManager _npcDamageManager;
+    private GiftManager _giftManager;
+    private AvengerManager _avengerManager;
+    private ArenaManager _arenaManager;
+    private Store _store;
+    public DbManager Db { get; private set; }
+    
 
 
     public override void Initialize()
     {
-        //Initialize config
+        // Initialize config
         string ConfigPath = Path.Combine(TShock.SavePath, "BetterTShock.json");
         Config = Config.Read(ConfigPath, out bool fileCreated);
+        Db = new DbManager(TShock.DB);
         if (fileCreated)
         {
             TShock.Log.ConsoleInfo("没有找到配置文件，已自动创建 BetterTShock.json。");
@@ -37,10 +48,17 @@ public class Plugin : TerrariaPlugin
         _bondManager = new BondManager(this);
         _playerDropManager = new PlayerDropManager(this);
         _npcDamageManager = new NpcDamageManager(this);
-        _eventDispatcher = new EventDispatcher(this, _bondManager, _newPlayerManager, _playerDropManager, _npcDamageManager);
+        _giftManager = new GiftManager(this);
+        _avengerManager = new AvengerManager(this);
+        _arenaManager = new ArenaManager(this);
+        _store = new Store(this);
+        _eventDispatcher = new EventDispatcher(this, _bondManager, _newPlayerManager, _playerDropManager, _npcDamageManager,
+            _store, _giftManager, _avengerManager, _arenaManager);
         Commands.ChatCommands.Add(new Command("tshock.account.logout", ChangeImmediateRespawn, "toggleresp", "tsp"));
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleChangeBond, "bond", "b"));
-        Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleGiftCommand, "gift", "g"));
+        Commands.ChatCommands.Add(new Command("tshock.account.logout", _giftManager.HandleGiftCommand, "gift", "g"));
+        Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleShowBondStats, "bondstat"));
+        Commands.ChatCommands.Add(new Command("tshock.account.logout", _arenaManager.HandleArenaCommand, "arena"));
 
     }
 
