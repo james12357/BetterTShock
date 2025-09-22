@@ -11,6 +11,7 @@ namespace BetterTShock.Managers
     {
         Idle,
         InProgress,
+        Cooldown
         // (可选) 未来可以添加 Cooldown 状态
     }
 
@@ -21,7 +22,8 @@ namespace BetterTShock.Managers
         private Timer _updateTimer = new Timer(2000); 
         
         // [新增] 用于追踪当前波数
-        private int _currentWave = -1; 
+        private int _currentWave = -1;
+        private DateTime _cooldownStartTime;
         
         private Rectangle _arenaBounds;
         private readonly List<TSPlayer> _playersInArena = new();
@@ -143,10 +145,21 @@ namespace BetterTShock.Managers
         // [新增] 补全了游戏循环检查的逻辑
         private void OnGameLoopCheck(object? o, ElapsedEventArgs e)
         {
+            // --- 如果正在休息，则检查休息时间是否结束 ---
+            if (_currentState == ArenaState.Cooldown)
+            {
+                // 休息5秒
+                if ((DateTime.UtcNow - _cooldownStartTime).TotalSeconds >= 5)
+                {
+                    StartNextWave(); // 休息结束，开始下一波
+                }
+                return; // 在休息期间，不做其他检查
+            }
+
+            // --- 如果波数正在进行中，则检查胜负 ---
             if (_currentState != ArenaState.InProgress) return;
 
             // 1. 检查玩家是否全部阵亡（失败条件）
-            // 使用倒序 for 循环安全地移除离线或死亡的玩家
             for (int i = _playersInArena.Count - 1; i >= 0; i--)
             {
                 var p = _playersInArena[i];
@@ -162,7 +175,7 @@ namespace BetterTShock.Managers
                 return;
             }
 
-            // 2. 检查怪物是否全部被消灭（胜利条件）
+            // 2. 检查怪物是否全部被消灭
             bool monstersAlive = false;
             for (int i = 0; i < Main.maxNPCs; i++)
             {
@@ -171,15 +184,17 @@ namespace BetterTShock.Managers
                     _arenaBounds.Contains((int)(npc.position.X / 16), (int)(npc.position.Y / 16)))
                 {
                     monstersAlive = true;
-                    break; // 只要找到一只存活的怪物，就可以停止检查
+                    break;
                 }
             }
 
             if (!monstersAlive)
             {
-                // 所有怪物都被消灭，开始下一波
+                // 所有怪物都被消灭！进入休息状态
                 TShock.Utils.Broadcast($"[竞技场] 第 {_currentWave + 1} 波已肃清！", Color.Green);
-                StartNextWave();
+                _currentState = ArenaState.Cooldown; // <--- [关键] 切换到休息状态
+                _cooldownStartTime = DateTime.UtcNow; // <--- [关键] 记录休息开始时间
+                TShock.Utils.Broadcast("[竞技场] 5秒后，下一波即将开始！", Color.Yellow);
             }
         }
 
@@ -196,15 +211,14 @@ namespace BetterTShock.Managers
             }
             else
             {
-                TShock.Utils.Broadcast("[竞技场] 挑战失败，请重整旗鼓！", Color.Red);
+                TShock.Utils.Broadcast("[竞技场] 挑战失败！", Color.Red);
             }
             
-            // 重置所有状态，为下一次挑战做准备
-            _currentState = ArenaState.Idle;
+            _currentState = ArenaState.Idle; // <--- 确保状态重置为 Idle
             _currentWave = -1;
             _playersInArena.Clear();
-            _updateTimer.Stop(); // 停止计时器
-            _updateTimer.Elapsed -= OnGameLoopCheck; // 解绑事件，防止重复绑定
+            _updateTimer.Stop();
+            _updateTimer.Elapsed -= OnGameLoopCheck;
         }
     }
 }

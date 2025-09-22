@@ -54,22 +54,22 @@ public class Store
         // 不知道有没有更好的方法，构造里面好像传不了这两个参
         plr.GiveItem(71, result.Copper);
         Item CopperItem = new Item();
-        CopperItem.type = 71;
+        CopperItem.SetDefaults(71);
         CopperItem.stack = result.Copper;
         
         plr.GiveItem(72, result.Silver);
         Item SilverItem = new Item();
-        SilverItem.type = 72;
+        SilverItem.SetDefaults(72);
         SilverItem.stack = result.Silver;
         
         plr.GiveItem(73, result.Gold);
         Item GoldItem = new Item();
-        GoldItem.type = 73;
+        GoldItem.SetDefaults(73);
         GoldItem.stack = result.Gold;
         
         plr.GiveItem(74, result.Platinum);
         Item PlatinumItem = new Item();
-        PlatinumItem.type = 74;
+        PlatinumItem.SetDefaults(74);
         PlatinumItem.stack = result.Platinum;
         var ItemTag = TShock.Utils.ItemTag;
         plr.SendSuccessMessage($"已售卖 {ItemTag(itemToSell)}！获得 {ItemTag(PlatinumItem)}，{ItemTag(GoldItem)}" +

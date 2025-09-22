@@ -59,6 +59,7 @@ public class Plugin : TerrariaPlugin
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _giftManager.HandleGiftCommand, "gift", "g"));
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _bondManager.HandleShowBondStats, "bondstat"));
         Commands.ChatCommands.Add(new Command("tshock.account.logout", _arenaManager.HandleArenaCommand, "arena"));
+        Commands.ChatCommands.Add(new Command("tshock.account.logout", _store.HandleStoreCommand, "sell"));
 
     }
 
