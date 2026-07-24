@@ -12,6 +12,14 @@ public class GiftManager
     public void HandleGiftCommand(CommandArgs args)
     {
         TSPlayer plr = args.Player as TSPlayer;
+        if (plr == null) return;
+
+        if (!plr.IsLoggedIn)
+        {
+            plr.SendErrorMessage("你需要登录后才能使用此功能。");
+            return;
+        }
+
         if (!plr.GetData<bool>("Bonded"))
         {
             plr.SendErrorMessage("你没有绑定到玩家！");
@@ -26,7 +34,7 @@ public class GiftManager
         }
         int destIndex = plr.GetData<int>("BondedWithUserID");
         TSPlayer? targetPlayer =
-            TShock.Players.FirstOrDefault(p => p != null && p.Active && p.Account.ID == destIndex);
+            TShock.Players.FirstOrDefault(p => p != null && p.Active && p.IsLoggedIn && p.Account.ID == destIndex);
         if (targetPlayer == null)
         {
             plr.SendErrorMessage("绑定的玩家当前不在线。");
@@ -61,10 +69,11 @@ public class GiftManager
     {
         if (args.Player == null) return;
         TSPlayer plr = args.Player;
-        if (!plr.GetData<bool>("Bonded")) return;
+
+        if (!plr.IsLoggedIn || !plr.GetData<bool>("Bonded")) return;
         int destId = plr.GetData<int>("BondedWithUserID");
         TSPlayer? targetPlayer =
-            TShock.Players.FirstOrDefault(p => p != null && p.Active && p.Account.ID == destId);
+            TShock.Players.FirstOrDefault(p => p != null && p.Active && p.IsLoggedIn && p.Account.ID == destId);
         if (targetPlayer == null)
         {
             plr.SendErrorMessage("绑定的玩家当前不在线。");

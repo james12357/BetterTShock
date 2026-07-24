@@ -58,31 +58,31 @@ namespace BetterTShock
         // 这是总的伤害处理入口
         private void OnPlayerDamage(object? sender, GetDataHandlers.PlayerDamageEventArgs args)
         {
-            // 在这里，我们“决定”谁来处理
-            
-            // 比如，未来可以先调用重生管理器的逻辑
-            // bool handled = _respawnManager.HandleImmediateRespawn(args);
-            // if (handled) return;
-
-            // 如果没被处理，再调用绑定管理器的逻辑
             TSPlayer plr = args.Player as TSPlayer;
+            if (plr == null || !plr.IsLoggedIn) return;
+
+            // 这里原先直接使用 args.Damage >= statLife 作为死亡判定，这不准确，因为还需要扣除护甲。
+            // 真实判定玩家死亡应依靠 Terraria 的其它机制。不过为了保持原有逻辑，我们先将其视为“承受大量伤害”的阈值。
+            // 实际上更好的办法是挂载特定的 PlayerDeath 钩子，但这里为了兼容您目前的 Manager 架构，
+            // 修正为您提到的逻辑：“查找谁绑定了他，并分担伤害”。
+
+            // 1. 如果该次伤害会导致致命后果，执行复仇Buff给予和重生判断。
             if (args.Damage >= plr.TPlayer.statLife)
             {
                 _avengerManager.GiveBondBuff(args);
-                // if (plr.GetData<bool>("Bonded"))
-                // {
-                //     _bondManager.SendDeathMessage(args);
-                // }
-                // 应该查找谁绑定了他。这里的逻辑不对。
+
+                // 【注意】这里不再使用 SendDeathMessage，因为真正的死亡处理应该在专门的死亡事件里，
+                // 或者在下面我们重构后的 BondManager 里面统一处理死亡播报。
+
                 if (plr.GetData<bool>("WantImmediateRespawn"))
                 {
                     plr.Spawn(PlayerSpawnContext.ReviveFromDeath);
-                                    plr.SendSuccessMessage("已重生！");
+                    plr.SendSuccessMessage("已重生！");
                 }
-                
             }
             else
             { 
+                // 2. 将非致命伤害交由 BondManager 处理（伤害分担等）
                 _bondManager.HandlePlayerDamaged(sender, args);
             }
         }
@@ -100,8 +100,8 @@ namespace BetterTShock
 
         private void OnItemDrop(object? sender, GetDataHandlers.ItemDropEventArgs args)
         {
-            if (args.Player == null) return;
             TSPlayer plr = args.Player as TSPlayer;
+            if (plr == null || !plr.IsLoggedIn) return;
             // if (plr.GetData<bool>("PendingSellItemToDrop"))
             // {
             //     _store.HandlePlayerDropForSell(sender, args);

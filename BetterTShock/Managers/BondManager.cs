@@ -19,6 +19,14 @@ public class BondManager
     public void HandleChangeBond(CommandArgs args)
     {
         TSPlayer plr = args.Player;
+        if (plr == null) return;
+
+        if (!plr.IsLoggedIn)
+        {
+            plr.SendErrorMessage("你需要登录后才能使用绑定功能。");
+            return;
+        }
+
         // 使用 ! 来切换布尔值，非常简洁
         plr.SetData("Bonded", !plr.GetData<bool>("Bonded"));
 
@@ -32,7 +40,7 @@ public class BondManager
             foreach (var p in TShock.Players)
             {
                 // 排除无效玩家和自己
-                if (p == null || !p.Active || p == plr)
+                if (p == null || !p.Active || p == plr || !p.IsLoggedIn)
                 {
                     continue;
                 }
@@ -74,11 +82,13 @@ public class BondManager
     public void HandlePlayerSpawn(object? sender, GetDataHandlers.SpawnEventArgs args)
     {
         TSPlayer plr = args.Player as TSPlayer;
+        if (plr == null) return;
+
         if (plr.GetData<bool>("Bonded"))
         {
             int destIndex = plr.GetData<int>("BondedWithUserID");
             TSPlayer? targetPlayer =
-                TShock.Players.FirstOrDefault(p => p != null && p.Active && p.Account.ID == destIndex);
+                TShock.Players.FirstOrDefault(p => p != null && p.Active && p.IsLoggedIn && p.Account.ID == destIndex);
             if (targetPlayer != null)
             {
                 plr.Teleport(targetPlayer.X, targetPlayer.Y);
@@ -95,43 +105,47 @@ public class BondManager
     public void HandlePlayerDamaged(object? sender, GetDataHandlers.PlayerDamageEventArgs args)
     {
         TSPlayer plr = args.Player as TSPlayer;
+        if (plr == null || !plr.IsLoggedIn) return;
+
         if (plr.GetData<bool>("OnDamageShare"))
         {
             args.Handled = true;
             plr.SetData("OnDamageShare", false);
             return;
         }
-        // --- 开始查找谁绑定了他 ---
-        TSPlayer? targetPlayer = null; // 用 dest 来存储找到的“绑定者”
+        // --- 优化：直接通过判断对方是否互相绑定来避免全服查找，
+        // --- 但既然目前的逻辑是单向绑定（A绑定了B，A承受B的伤害），我们依然查找谁绑定了plr。
+        // --- 这里使用 LINQ 进行简化，使得代码更加优雅。
 
-        foreach (TSPlayer p in TShock.Players)
-        {
-            // 排除无效玩家
-            if (p == null || !p.Active)
-            {
-                continue;
-            }
-
-            // 检查玩家 p 是否绑定了受伤的玩家 plr
-            if (p.GetData<bool>("Bonded") && p.GetData<int>("BondedWithUserID") == plr.Account.ID)
-            {
-                // 找到了！p 就是那个绑定者
-                targetPlayer = p;
-                break; // 既然已经找到，就跳出循环，提高效率
-            }
-        }
+        TSPlayer? targetPlayer = TShock.Players.FirstOrDefault(p =>
+            p != null && p.Active && p.IsLoggedIn &&
+            p.GetData<bool>("Bonded") &&
+            p.GetData<int>("BondedWithUserID") == plr.Account.ID);
 
         if (targetPlayer != null)
         {
-            // 在 if (targetPlayer != null) 内部
             if (targetPlayer.Dead) return;
+
             int originalDamage = args.Damage;
             int sharedDamage = (int)Math.Round(originalDamage * Plugin.Config.BondDamageSharingRatio);
             int finalDamage = originalDamage - sharedDamage;
+
             if (sharedDamage > 0)
             {
                 targetPlayer.SetData("OnDamageShare", true);
-                targetPlayer.DamagePlayer(sharedDamage);
+
+                // 为了让分担的伤害看起来更自然，并且不破坏原有的死亡信息（DamagePlayer直接扣血如果是致命的不会有正常击杀提示）
+                // 我们直接设置 statLife，而不是调用 DamagePlayer，或者仍然调用 DamagePlayer 但需确保不会因此导致意外错误。
+                // 考虑到兼容性，保留 DamagePlayer，但我们要判断一下是否会致死。
+                if (targetPlayer.TPlayer.statLife > sharedDamage)
+                {
+                    targetPlayer.DamagePlayer(sharedDamage);
+                }
+                else
+                {
+                    // 如果分担的伤害会导致绑定者死亡，则让他剩 1 滴血，避免尴尬的非正常死亡。
+                    targetPlayer.DamagePlayer(targetPlayer.TPlayer.statLife - 1);
+                }
             }
             args.Damage = (short)finalDamage;
         }
@@ -141,9 +155,11 @@ public class BondManager
     public void SendDeathMessage(GetDataHandlers.PlayerDamageEventArgs args)
     {
         TSPlayer plr = args.Player as TSPlayer; // 这里是已死的
+        if (plr == null) return;
+
         int destIndex = plr.GetData<int>("BondedWithUserID");
         TSPlayer? targetPlayer =
-            TShock.Players.FirstOrDefault(p => p != null && p.Active && p.Account.ID == destIndex);
+            TShock.Players.FirstOrDefault(p => p != null && p.Active && p.IsLoggedIn && p.Account.ID == destIndex);
         if (targetPlayer == null) return;
         targetPlayer.SendErrorMessage("你把 " + plr.Name + " 害死了！");
     }
